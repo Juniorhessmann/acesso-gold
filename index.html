@@ -353,44 +353,48 @@
   const inputBusca = document.getElementById("busca");
   const filtroSelect = document.getElementById("filtro");
 
-  async function carregarCursos() {
-    try {
-      const response = await fetch(
-        "https://cdn.jsdelivr.net/gh/PatrickMaiak/Sid@main/cursos.json?v=" + Date.now()
-      );
+async function carregarCursos() {
+  try {
+    const response = await fetch(
+      "https://api.github.com/repos/Juniorhessmann/acesso-gold-data/contents/cursos.json",
+      { headers: { "Accept": "application/vnd.github.v3.raw" } }
+    );
 
-      if (!response.ok) throw new Error("Erro ao carregar cursos");
+    if (!response.ok) throw new Error("Erro ao carregar cursos");
 
-      const data = await response.json();
+    const data = await response.json();
 
-      // ✅ Atualiza a variável global (sem criar nova const)
-      cursos = (data.produtos || []).map(curso => {
-        const imagemFinal = curso.imagem.startsWith("http")
-          ? curso.imagem
-          : `https://cdn.jsdelivr.net/gh/PatrickMaiak/Sid@main/${curso.imagem}`;
-        return { ...curso, imagem: imagemFinal };
-      });
+    // Garante compatibilidade caso o JSON seja um array direto ou tenha {produtos: []}
+    const cursosData = Array.isArray(data) ? data : (data.produtos || []);
 
-      // ✅ Gera categorias únicas dinamicamente
-      const categorias = ["todos", ...new Set(cursos.map(c => c.categoria))];
-      filtroSelect.innerHTML = "";
-      categorias.forEach(cat => {
-        const option = document.createElement("option");
-        option.value = cat;
-        option.textContent = cat;
-        filtroSelect.appendChild(option);
-      });
+    cursos = cursosData.map(curso => {
+      const imagemFinal = curso.imagem.startsWith("http")
+        ? curso.imagem
+        : `https://raw.githubusercontent.com/Juniorhessmann/acesso-gold-data/main/${curso.imagem}`;
+      return { ...curso, imagem: imagemFinal };
+    });
 
-      renderizarCursos(cursos);
-    } catch (err) {
-      console.error("Falha ao buscar cursos:", err);
-      listaCursos.innerHTML = `
-        <p style='color:#aaa;text-align:center;'>
-          Erro ao carregar cursos 😢<br>
-          <small>${err.message}</small>
-        </p>`;
-    }
+    // Atualiza o seletor de categorias
+    const categorias = ["todos", ...new Set(cursos.map(c => c.categoria))];
+    filtroSelect.innerHTML = "";
+    categorias.forEach(cat => {
+      const option = document.createElement("option");
+      option.value = cat;
+      option.textContent = cat;
+      filtroSelect.appendChild(option);
+    });
+
+    renderizarCursos(cursos);
+  } catch (err) {
+    console.error("❌ Falha ao buscar cursos:", err);
+    listaCursos.innerHTML = `
+      <p style='color:#aaa;text-align:center;'>
+        Erro ao carregar cursos 😢<br>
+        <small>${err.message}</small>
+      </p>`;
   }
+}
+
 
   function renderizarCursos(lista) {
     listaCursos.innerHTML = "";
